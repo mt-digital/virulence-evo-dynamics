@@ -14,6 +14,9 @@ mytheme <- theme(axis.line = element_line(), legend.key=element_rect(fill = NA),
 plot_series <- function(csv_file, write_path="tmp/output.pdf") {
 
   df <- read.csv(csv_file)
+
+  # dflim <- df[,!names(df) %in% c("susceptible")]
+  # melted <- melt(dflim, id.vars = "step")
   melted <- melt(df, id.vars = "step")
 
   ggplot(melted, aes(x=step, y=value, col=variable)) + geom_line() + mytheme

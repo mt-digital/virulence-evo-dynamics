@@ -52,7 +52,7 @@ mutable struct Person <: AbstractAgent
     status::SIR_Status
 
     # Each agent is infected by a unique pathogen with a certain virulence.
-    infected_by::Pathogen
+    pathogen::Pathogen
 end
 
 
@@ -62,7 +62,7 @@ within this agent_step!, for simplicity.
 """
 function agent_step!(focal_agent::Person, model::ABM)
 
-    virulence = copy(focal_agent.infected_by.virulence)
+    virulence = copy(focal_agent.pathogen.virulence)
 
     # Possibly get infected if not infected...
     if focal_agent.status == Susceptible
@@ -82,6 +82,15 @@ end
 
 
 function model_step!(model)
+
+    # Possibly add agents through birth/migration.
+    add_count = rand(model.add_count_dist)
+
+    if add_count > 0
+        for _ in 1:add_count
+            add_agent!(model, Susceptible, Pathogen(NaN))
+        end
+    end
 
     # Possibly remove random agents.
     death_count = rand(model.death_count_dist)
@@ -119,30 +128,36 @@ happens, let the pathogen evolve.
 """
 function interact!(focal_agent, model)
 
-    partner = sample(filter(a -> a != focal_agent, allagents(model)))
+    
+    partner = sample(allagents(model))
+    while partner == focal_agent
+        partner = sample(allagents(model))
+    end
 
     # Possibly get infected.
     if (partner.status == Infected) && 
-       (rand() ≤ transmissibility(partner.infected_by.virulence))
+       (rand() ≤ transmissibility(partner.pathogen.virulence; 
+                                  a = model.virulence_transmission_coeff,
+                                  b = model.virulence_transmission_denom_summand))
 
         focal_agent.status = Infected 
 
         # Without mutation, the infection has the same recovery rate as partner's.
-        virulence = copy(partner.infected_by.virulence)
+        virulence = copy(partner.pathogen.virulence)
 
         # The pathogen evolves 
         if rand() < model.mutation_rate
             virulence += rand(model.mutation_dist)
 
             if virulence < 0.0
-                virulence = 0.0
+                virulence = 0.05
             elseif virulence > 1.0
-                virulence = 1.0
+                virulence = 0.95
             end
         end
 
         transmitted_pathogen = Pathogen(virulence)
-        focal_agent.infected_by = transmitted_pathogen
+        focal_agent.pathogen = transmitted_pathogen
 
         model.total_infected += 1
     end
@@ -151,11 +166,17 @@ end
 
 function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
                                initial_infected_frac = 0.10, mutation_rate = 0.05,
-                               mutation_variance = 0.05, global_death_rate = 0.0,
-                               virulence_mortality_coeff = 0.1)
+                               mutation_variance = 0.05, 
+                               global_add_rate = 0.0, global_death_rate = 0.0,
+                               virulence_mortality_coeff = 0.1, 
+                               virulence_transmission_coeff = 1.0, 
+                               virulence_transmission_denom_summand = 5.0)
 
     # Mutations are drawn from normal distros with zero mean and given variance.
     mutation_dist = Normal(0.0, mutation_variance)
+
+    # Death count for each time step drawn from Poisson with λ = death_rate.
+    add_count_dist = Poisson(global_add_rate)
 
     # Death count for each time step drawn from Poisson with λ = death_rate.
     death_count_dist = Poisson(global_death_rate)
@@ -166,8 +187,11 @@ function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
     properties = @dict(metapop_size, 
                        virulence_init, initial_infected_frac, 
                        virulence_mortality_coeff,
+                       virulence_transmission_coeff,
+                       virulence_transmission_denom_summand,
                        mutation_rate, mutation_dist, global_death_rate, 
-                       death_count_dist, total_infected)
+                       global_add_rate, death_count_dist, add_count_dist,
+                       total_infected)
 
     model = UnremovableABM(Person; properties)
 
@@ -189,6 +213,7 @@ function initialize_metapopulation!(model::ABM)
     initial_infected_frac = model.initial_infected_frac
 
     initial_infected_count = ceil(initial_infected_frac * metapop_size)
+    model.total_infected = initial_infected_count
 
     virulence_init_distro = Normal(virulence_init, 0.1)
 
@@ -197,8 +222,8 @@ function initialize_metapopulation!(model::ABM)
         if agent_idx ≤ initial_infected_count
 
             status = Infected
-            virulence_init = rand(virulence_init_distro)
-            # virulence_init = model.virulence_init
+            # virulence_init = rand(virulence_init_distro)
+            virulence_init = model.virulence_init
 
             if virulence_init < 0.0
                 virulence_init = 0.0

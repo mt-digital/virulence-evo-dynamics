@@ -59,6 +59,11 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
 end
 
 
+function run_trials(nreplicates = 10; outputfilename, experiment_kwargs...)
+
+end
+
+
 function plot_series(agent_df)
 
     # Create temporary directory for CSV and plot output.

@@ -170,7 +170,8 @@ function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
                                global_add_rate = 0.0, global_death_rate = 0.0,
                                virulence_mortality_coeff = 0.1, 
                                virulence_transmission_coeff = 1.0, 
-                               virulence_transmission_denom_summand = 5.0)
+                               virulence_transmission_denom_summand = 5.0,
+                               rep_idx = nothing)
 
     # Mutations are drawn from normal distros with zero mean and given variance.
     mutation_dist = Normal(0.0, mutation_variance)
@@ -191,7 +192,7 @@ function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
                        virulence_transmission_denom_summand,
                        mutation_rate, mutation_dist, global_death_rate, 
                        global_add_rate, death_count_dist, add_count_dist,
-                       total_infected)
+                       total_infected, rep_idx)
 
     model = UnremovableABM(Person; properties)
 

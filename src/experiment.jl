@@ -21,16 +21,17 @@ end
 @everywhere quickactivate("..")
 @everywhere include("model.jl")
 
-function virulence_evo_experiment(nreplicates = 10; 
+function virulence_evo_experiment(nreplicates = 10, record_series = false; 
                                     maxsteps = 20_000, metapop_size = 2_000,
-                                    virulence_init = 0.05:0.05:0.95,
+                                    virulence_init = collect(0.01:0.1:0.91),
                                     initial_infected_frac = 0.005, 
                                     mutation_rate = [0.0, 0.8],
                                     mutation_variance = 0.2,
                                     virulence_mortality_coeff = 0.01,
-                                    virulence_transmission_coeff = 0.02,
+                                    virulence_transmission_coeff = 0.01,
                                     virulence_transmission_denom_summand = 0.3, 
-                                    global_add_rate = [0,2], global_death_rate = [0,2], 
+                                    # global_add_rate = [0,2], global_death_rate = [0,2], 
+                                    global_add_rate = 2, global_death_rate = 2, 
                                     whensteps = 10
     )
 
@@ -70,16 +71,19 @@ function virulence_evo_experiment(nreplicates = 10;
     adata = [(:status, susceptible), (:status, infected), (virulence, filtermean)]
 
     # Track total infected over time.
-    mdata = [:total_infected]
+    mdata = [:virulence_init, :total_infected]
 
     # Stop when the pathogen has gone extinct or maxsteps reached.
     stopfn(model, step) = (count(
         agent.status == Infected for agent in collect(allagents(model))
        ) == 0) || (step == maxsteps)
 
-    when(model, step) = step % whensteps == 0
-
-    models = [ ]
+    # Don't want to record every step in the series for full experiments.
+    if record_series
+        when(model, step) = step % whensteps == 0
+    else
+        when = stopfn
+    end
 
     adf, mdf = ensemblerun!(models, agent_step!, model_step!, stopfn;
                             adata, mdata, when, parallel = true, 

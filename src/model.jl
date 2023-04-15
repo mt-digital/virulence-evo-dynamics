@@ -145,7 +145,7 @@ function interact!(focal_agent, model)
         # Without mutation, the infection has the same recovery rate as partner's.
         virulence = copy(partner.pathogen.virulence)
 
-        # The pathogen evolves 
+        # The pathogen evolves.
         if rand() < model.mutation_rate
             virulence += rand(model.mutation_dist)
 
@@ -156,6 +156,7 @@ function interact!(focal_agent, model)
             end
         end
 
+        # Initialize new Pathogen object for the transmitted pathogen.
         transmitted_pathogen = Pathogen(virulence)
         focal_agent.pathogen = transmitted_pathogen
 
@@ -246,6 +247,7 @@ function initialize_metapopulation!(model::ABM)
 end
 
 
+# Classic saturating transmissibility-virulence relationship.
 function transmissibility(virulence; a = 1.0, b = 10.0)
     return (a * virulence) / (b + virulence)
 end

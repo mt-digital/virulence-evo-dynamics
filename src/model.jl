@@ -151,8 +151,8 @@ function interact!(focal_agent, model)
 
             if virulence < 0.0
                 virulence = 0.05
-            elseif virulence > 1.0
-                virulence = 0.95
+            # elseif virulence > 1.0
+            #     virulence = 0.95
             end
         end
 

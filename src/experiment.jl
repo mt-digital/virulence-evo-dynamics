@@ -21,6 +21,7 @@ end
 @everywhere quickactivate("..")
 @everywhere include("model.jl")
 
+
 function virulence_evo_experiment(nreplicates = 10, record_series = false; 
                                     maxsteps = 20_000, metapop_size = 2_000,
                                     virulence_init = collect(0.01:0.1:0.91),
@@ -71,7 +72,7 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
     adata = [(:status, susceptible), (:status, infected), (virulence, filtermean)]
 
     # Track total infected over time.
-    mdata = [:virulence_init, :total_infected]
+    mdata = [:mutation_rate, :virulence_init, :total_infected]
 
     # Stop when the pathogen has gone extinct or maxsteps reached.
     stopfn(model, step) = (count(

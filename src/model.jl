@@ -14,7 +14,7 @@
 # in SustainbleCBA.
 
 # Author: Matthew A. Turner <maturner01@gmail.com>
-# Date: March 21, 2023
+# Date: May 25, 2023
 #
 using Agents
 using Distributions
@@ -45,6 +45,9 @@ struct Pathogen
 end
 
 
+@enum Group Minority Majority
+
+
 mutable struct Person <: AbstractAgent
     
     id::Int
@@ -53,6 +56,8 @@ mutable struct Person <: AbstractAgent
 
     # Each agent is infected by a unique pathogen with a certain virulence.
     pathogen::Pathogen
+
+    group::Group
 end
 
 
@@ -128,8 +133,9 @@ happens, let the pathogen evolve.
 """
 function interact!(focal_agent, model)
 
-    
-    partner = sample(allagents(model))
+    # partner = sample(allagents(model))
+    group = sample_group(focal_agent, model)
+    partner = select_partner(focal_agent, model, group)
     while partner == focal_agent
         partner = sample(allagents(model))
     end
@@ -151,8 +157,6 @@ function interact!(focal_agent, model)
 
             if virulence < 0.0
                 virulence = 0.05
-            # elseif virulence > 1.0
-            #     virulence = 0.95
             end
         end
 
@@ -161,6 +165,11 @@ function interact!(focal_agent, model)
         focal_agent.pathogen = transmitted_pathogen
 
         model.total_infected += 1
+        if focal_agent.group == Minority
+            model.total_minority_infected += 1
+        else
+            model.total_majority_infected += 1
+        end
     end
 end
 
@@ -250,4 +259,24 @@ end
 # Classic saturating transmissibility-virulence relationship.
 function transmissibility(virulence; a = 1.0, b = 10.0)
     return (a * virulence) / (b + virulence)
+end
+
+
+function select_partner(focal_agent, model, group)
+
+    ## Begin payoff-biased social learning from teacher within selected group.
+    prospective_partners = 
+        filter(agent -> (agent.group == group) && (agent != focal_agent), 
+               collect(allagents(model)))
+
+    partner_weights = 
+        map(agent -> model.trait_fitness_dict[agent.curr_trait], 
+                              prospective_partners)
+
+    # Renormalize weights.
+    denom = Float64(sum(partner_weights))
+    partner_weights ./= denom
+
+    # Select partner.
+    return sample(prospective_partners, Weights(partner_weights))
 end

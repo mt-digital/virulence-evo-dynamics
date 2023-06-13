@@ -57,21 +57,46 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
         0.0 : count(i == Susceptible for i in status_vec) 
 
     # ...then infected.
-    infected(status_vec) = isempty(status_vec) ? 
-        0.0 : 
-        count(i == Infected for i in status_vec)
+    # infected(status_vec) = isempty(status_vec) ? 
+    #     0.0 : 
+    #     count(i == Infected for i in status_vec)
+    function infected(status_vec)
+        # println(status_vec)
+        return isempty(status_vec) ?  0.0 : count(i == Infected for i in status_vec)
+    end
 
     # Define aggregation for pathogen virulence.
-    # virulence(agent) = agent.status == Dead ? NaN : agent.pathogen.virulence
+    # virulence(pathogen_vec) = mean(filter(
     # virulence(agent) = agent.pathogen.virulence
     # filtermean(virulence_vec) = mean(filter(!isnan, collect(virulence_vec)))
     # filtermean(x) = mean(filter(!isnan, x))
-    function filtermeanvirulence(person_vec)
-        virulence(person) = person.pathogen.virulence
-        virulence_vec = [virulence(p) for p in person_vec]
-        filter!(!isnan, virulence_vec)
-        return mean(virulence_vec)
+    function filtermeanvirulence(pathogen_vec)
+        # virulence(pathogen) = pathogen.virulence
+        # virulence_vec = [pathogen.virulence for pathogen in pathogen_vec]
+        # println(pathogen_vec)
+        # println(typeof(pathogen_vec))
+        # println(length(collect(pathogen_vec)))
+        virulence_vec = [p.virulence for p in pathogen_vec if !isnan(p.virulence)]
+        if isempty(virulence_vec) 
+            return 0.0
+        else
+            return mean(virulence_vec)
+        end
     end
+
+    # function filtermeanvirulence_minority(person_vec)
+    #     virulence(person) = person.pathogen.virulence
+    #     virulence_vec = [virulence(p) for p in person_vec if p.group == Minority]
+    #     filter!(!isnan, virulence_vec)
+    #     return mean(virulence_vec)
+    # end
+
+    # function filtermeanvirulence_majority(person_vec)
+    #     virulence(person) = person.pathogen.virulence
+    #     virulence_vec = [virulence(p) for p in person_vec if p.group == Majority]
+    #     filter!(!isnan, virulence_vec)
+    #     return mean(virulence_vec)
+    # end
 
     # Define group filtering.
     is_minority(x) = x.group == Minority
@@ -80,15 +105,16 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
     # Put all agent data aggregation together.
     # append!(adata, [(virulence, filtermean)])
     adata = [
-             (:status, susceptible), (:status, infected), (filtermeanvirulence),
+             (:status, susceptible), (:status, infected), 
+             (:pathogen, filtermeanvirulence),
 
              (:status, susceptible, is_minority), 
              (:status, infected, is_minority), 
-             (filtermeanvirulence, is_minority),
+             (:pathogen, filtermeanvirulence, is_minority),
 
              (:status, susceptible, !is_minority), 
              (:status, infected, !is_minority), 
-             (filtermeanvirulence, !is_minority)
+             (:pathogen, filtermeanvirulence, !is_minority) #, !is_minority)
              # (virulence, filtermean, !is_minority)
             ]
 

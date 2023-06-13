@@ -16,11 +16,11 @@
 # Author: Matthew A. Turner <maturner01@gmail.com>
 # Date: May 25, 2023
 #
+
 using Agents
 using Distributions
 using Random
 using StatsBase
-# using Statistics
 
 
 """
@@ -85,7 +85,6 @@ function agent_step!(focal_agent::Person, model::ABM)
         
         remove_agent!(focal_agent, model)
     end
-
 end
 
 
@@ -334,7 +333,7 @@ function select_partner(focal_agent, model, group)
     ## Begin payoff-biased social learning from teacher within selected group.
     prospective_partners = 
         filter(agent -> (agent.group == group) && 
-               (agent != focal_agent) &&
+               (agent != focal_agent),# &&
                # (agent.status != Dead), 
                collect(allagents(model)))
 

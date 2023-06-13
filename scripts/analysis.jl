@@ -48,9 +48,6 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
                           :filtermean_virulence => :mean_virulence);
     end
 
-    # agent_df.susceptible /= m.metapop_size
-    # agent_df.infected /= m.metapop_size
-
     if plot
         plot_series(agent_df)
     end

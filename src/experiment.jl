@@ -31,7 +31,9 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
                                     virulence_mortality_coeff = 0.01,
                                     virulence_transmission_coeff = 0.01,
                                     virulence_transmission_denom_summand = 0.3, 
-                                    # global_add_rate = [0,2], global_death_rate = [0,2], 
+                                    min_group_frac = 0.2,
+                                    min_start = true,
+                                    maj_start = false,
                                     global_add_rate = 2, global_death_rate = 2, 
                                     whensteps = 10
     )
@@ -52,24 +54,43 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
 
     # Define aggregation of infection status, first susceptible...
     susceptible(status_vec) = isempty(status_vec) ? 
-        0.0 : 
-        count(i == Susceptible for i in status_vec) / 
-            count(i != Dead for i in status_vec)
+        0.0 : count(i == Susceptible for i in status_vec) 
 
     # ...then infected.
     infected(status_vec) = isempty(status_vec) ? 
         0.0 : 
-        count(i == Infected for i in status_vec) / 
-            count(i != Dead for i in status_vec)
+        count(i == Infected for i in status_vec)
 
     # Define aggregation for pathogen virulence.
-    virulence(agent) = agent.status == Dead ? NaN : agent.pathogen.virulence
-    filtermean(virulence_vec) = mean(filter(!isnan, collect(virulence_vec)))
+    # virulence(agent) = agent.status == Dead ? NaN : agent.pathogen.virulence
+    # virulence(agent) = agent.pathogen.virulence
+    # filtermean(virulence_vec) = mean(filter(!isnan, collect(virulence_vec)))
+    # filtermean(x) = mean(filter(!isnan, x))
+    function filtermeanvirulence(person_vec)
+        virulence(person) = person.pathogen.virulence
+        virulence_vec = [virulence(p) for p in person_vec]
+        filter!(!isnan, virulence_vec)
+        return mean(virulence_vec)
+    end
+
+    # Define group filtering.
+    is_minority(x) = x.group == Minority
 
 
     # Put all agent data aggregation together.
     # append!(adata, [(virulence, filtermean)])
-    adata = [(:status, susceptible), (:status, infected), (virulence, filtermean)]
+    adata = [
+             (:status, susceptible), (:status, infected), (filtermeanvirulence),
+
+             (:status, susceptible, is_minority), 
+             (:status, infected, is_minority), 
+             (filtermeanvirulence, is_minority),
+
+             (:status, susceptible, !is_minority), 
+             (:status, infected, !is_minority), 
+             (filtermeanvirulence, !is_minority)
+             # (virulence, filtermean, !is_minority)
+            ]
 
     # Track total infected over time.
     mdata = [:mutation_rate, :virulence_init, :total_infected]

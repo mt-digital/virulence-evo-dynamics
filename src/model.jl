@@ -26,7 +26,7 @@ using StatsBase
 """
 Classic SIR infectious disease model states–we leave Dead agents in simulation for performance reasons.
 """
-@enum SIR_Status Susceptible Infected Dead
+@enum SIR_Status Susceptible Infected #Dead
 
 
 """
@@ -54,10 +54,12 @@ mutable struct Person <: AbstractAgent
 
     status::SIR_Status
 
+    group::Group
+
     # Each agent is infected by a unique pathogen with a certain virulence.
     pathogen::Pathogen
 
-    group::Group
+    homophily::Float64
 end
 
 
@@ -72,6 +74,7 @@ function agent_step!(focal_agent::Person, model::ABM)
     # Possibly get infected if not infected...
     if focal_agent.status == Susceptible
         interact!(focal_agent, model)
+
     # ...or possibly die if infected
     elseif (focal_agent.status == Infected) &&
            (rand() < virulence_mortality_rate(
@@ -80,7 +83,7 @@ function agent_step!(focal_agent::Person, model::ABM)
                     )
            )
         
-        focal_agent.status = Dead
+        remove_agent!(focal_agent, model)
     end
 
 end
@@ -93,7 +96,13 @@ function model_step!(model)
 
     if add_count > 0
         for _ in 1:add_count
-            add_agent!(model, Susceptible, Pathogen(NaN))
+            if rand() < model.min_group_frac
+                add_agent!(model, Susceptible, Minority, Pathogen(NaN), 
+                           model.min_homophily)
+            else
+                add_agent!(model, Susceptible, Majority, Pathogen(NaN), 
+                           model.maj_homophily)
+            end
         end
     end
 
@@ -111,8 +120,9 @@ end
 function random_agent_dieoff!(model)
 
     agent_to_remove = sample(collect(allagents(model)))
+    remove_agent!(agent_to_remove, model)
 
-    agent_to_remove.status = Dead
+    # agent_to_remove.status = Dead
 end
 
 
@@ -124,6 +134,24 @@ function virulence_mortality_rate(virulence::Float64;
 
     # For now use linear virulence-mortality relationship.
     return virulence_mortality_coeff * virulence
+end
+
+
+function sample_group(focal_agent, model)
+
+    weights = zeros(2)
+
+    # XXX a waste to calculate this every time.
+    agent_group_weight = (1 + focal_agent.homophily) / 2.0
+
+    group_idx = Int(focal_agent.group) + 1
+
+    # weights[focal_agent.group] = agent_group_weight
+    # weights[1:end .!= focal_agent.group] .= 1 - agent_group_weight
+    weights[group_idx] = agent_group_weight
+    weights[1:end .!= group_idx] .= 1 - agent_group_weight
+    
+    return sample([Minority, Majority], Weights(weights)) 
 end
 
 
@@ -174,13 +202,18 @@ function interact!(focal_agent, model)
 end
 
 
-function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
+function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
                                initial_infected_frac = 0.10, mutation_rate = 0.05,
                                mutation_variance = 0.05, 
                                global_add_rate = 0.0, global_death_rate = 0.0,
                                virulence_mortality_coeff = 0.1, 
                                virulence_transmission_coeff = 1.0, 
                                virulence_transmission_denom_summand = 5.0,
+                               min_group_frac = 0.2,
+                               min_start = true,
+                               maj_start = false,
+                               min_homophily = 0.0,
+                               maj_homophily = 0.0,
                                rep_idx = nothing)
 
     # Mutations are drawn from normal distros with zero mean and given variance.
@@ -194,17 +227,22 @@ function virulence_evo_model(; metapop_size = 100, virulence_init = 0.3,
 
     # Track total number of infections over time.
     total_infected::Int = 0
+    total_minority_infected::Int = 0
+    total_majority_infected::Int = 0
 
-    properties = @dict(metapop_size, 
+    properties = @dict(metapop_size, min_group_frac, min_start, maj_start,
+                       min_homophily, maj_homophily,
                        virulence_init, initial_infected_frac, 
                        virulence_mortality_coeff,
                        virulence_transmission_coeff,
                        virulence_transmission_denom_summand,
                        mutation_rate, mutation_dist, global_death_rate, 
                        global_add_rate, death_count_dist, add_count_dist,
-                       total_infected, rep_idx)
+                       total_infected, total_minority_infected,
+                       total_majority_infected, rep_idx)
 
-    model = UnremovableABM(Person; properties)
+    # model = UnremovableABM(Person; properties)
+    model = ABM(Person; properties)
 
     initialize_metapopulation!(model)
     
@@ -223,36 +261,65 @@ function initialize_metapopulation!(model::ABM)
     metapop_size = model.metapop_size
     initial_infected_frac = model.initial_infected_frac
 
-    initial_infected_count = ceil(initial_infected_frac * metapop_size)
-    model.total_infected = initial_infected_count
-
     virulence_init_distro = Normal(virulence_init, 0.1)
 
-    for agent_idx in 1:metapop_size
+    gmin_count = Int(model.min_group_frac * metapop_size)
+    gmaj_count = metapop_size - gmin_count
 
-        if agent_idx ≤ initial_infected_count
+    if model.min_start
+        gmin_init_infected_count = ceil(initial_infected_frac * gmin_count)
+    else
+        gmin_init_infected_count = 0
+    end
+    for min_agent_idx in 1:gmin_count
+        initialize_add_agent!(min_agent_idx, model, gmin_init_infected_count,
+                             Minority)
+    end
 
-            status = Infected
-            # virulence_init = rand(virulence_init_distro)
-            virulence_init = model.virulence_init
+    if model.maj_start
+        gmaj_init_infected_count = ceil(initial_infected_frac * gmaj_count)
+    else
+        gmaj_init_infected_count = 0
+    end
+    for maj_agent_idx in 1:gmaj_count
+        initialize_add_agent!(maj_agent_idx, model, 
+                              gmaj_init_infected_count,
+                              Majority, gmin_count)
+    end
 
-            if virulence_init < 0.0
-                virulence_init = 0.0
-            elseif virulence_init > 1.0
-                virulence_init = 1.0
-            end
+end
 
-            pathogen = Pathogen(virulence_init)
-        else
 
-            status = Susceptible
-            pathogen = Pathogen(NaN)
+
+function initialize_add_agent!(in_group_idx, model, initial_infected_count, 
+                               group, agent_model_index_offset = 0)
+
+    if in_group_idx ≤ initial_infected_count
+
+        status = Infected
+        # virulence_init = rand(virulence_init_distro)
+        virulence_init = model.virulence_init
+
+        if virulence_init < 0.0
+            virulence_init = 0.0
+        elseif virulence_init > 1.0
+            virulence_init = 1.0
         end
 
-        add_agent!(
-            Person(agent_idx, status, pathogen), model
-        )
+        pathogen = Pathogen(virulence_init)
+    else
+
+        status = Susceptible
+        pathogen = Pathogen(NaN)
     end
+
+    model_agent_idx = in_group_idx + agent_model_index_offset
+
+    homophily = group == Minority ? model.min_homophily : model.maj_homophily
+
+    add_agent!(
+        Person(model_agent_idx, status, group, pathogen, homophily), model
+    )
 end
 
 
@@ -266,17 +333,19 @@ function select_partner(focal_agent, model, group)
 
     ## Begin payoff-biased social learning from teacher within selected group.
     prospective_partners = 
-        filter(agent -> (agent.group == group) && (agent != focal_agent), 
+        filter(agent -> (agent.group == group) && 
+               (agent != focal_agent) &&
+               # (agent.status != Dead), 
                collect(allagents(model)))
 
-    partner_weights = 
-        map(agent -> model.trait_fitness_dict[agent.curr_trait], 
-                              prospective_partners)
+    # partner_weights = 
+    #     map(agent -> model.trait_fitness_dict[agent.curr_trait], 
+    #                           prospective_partners)
 
-    # Renormalize weights.
-    denom = Float64(sum(partner_weights))
-    partner_weights ./= denom
+    # # Renormalize weights.
+    # denom = Float64(sum(partner_weights))
+    # partner_weights ./= denom
 
     # Select partner.
-    return sample(prospective_partners, Weights(partner_weights))
+    return sample(prospective_partners)  #, Weights(partner_weights))
 end

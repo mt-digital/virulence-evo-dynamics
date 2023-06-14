@@ -113,6 +113,12 @@ function model_step!(model)
             random_agent_dieoff!(model)
         end
     end
+
+    model.minority_group = filter(agent -> agent.group == Minority, 
+                                  collect(allagents(model)))
+
+    model.majority_group = filter(agent -> agent.group == Majority, 
+                                  collect(allagents(model)))
 end
 
 
@@ -229,6 +235,9 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
     total_minority_infected::Int = 0
     total_majority_infected::Int = 0
 
+    minority_group = []
+    majority_group = []
+
     properties = @dict(metapop_size, min_group_frac, min_start, maj_start,
                        min_homophily, maj_homophily,
                        virulence_init, initial_infected_frac, 
@@ -238,13 +247,20 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
                        mutation_rate, mutation_dist, global_death_rate, 
                        global_add_rate, death_count_dist, add_count_dist,
                        total_infected, total_minority_infected,
-                       total_majority_infected, rep_idx)
+                       total_majority_infected, rep_idx,
+                       minority_group, majority_group)
 
     # model = UnremovableABM(Person; properties)
     model = ABM(Person; properties)
 
     initialize_metapopulation!(model)
-    
+
+    model.minority_group = filter(agent -> agent.group == Minority, 
+                                  collect(allagents(model)))
+
+    model.majority_group = filter(agent -> agent.group == Majority, 
+                                  collect(allagents(model)))
+
     return model
 end
 
@@ -331,11 +347,18 @@ end
 function select_partner(focal_agent, model, group)
 
     ## Begin payoff-biased social learning from teacher within selected group.
-    prospective_partners = 
-        filter(agent -> (agent.group == group) && 
-               (agent != focal_agent),# &&
-               # (agent.status != Dead), 
-               collect(allagents(model)))
+    if group == Minority
+        group_members = model.minority_group
+    else
+        group_members = model.majority_group
+    end
+    
+    prospective_partners = filter(agent -> agent != focal_agent, group_members)
+
+    # prospective_partners = filter(agent -> (agent.group == group) && 
+    #            (agent != focal_agent),# &&
+    #            # (agent.status != Dead), 
+    #            collect(allagents(model)))
 
     # partner_weights = 
     #     map(agent -> model.trait_fitness_dict[agent.curr_trait], 

@@ -25,7 +25,7 @@ end
 function virulence_evo_experiment(nreplicates = 10, record_series = false; 
                                     maxsteps = 20_000, metapop_size = 2_000,
                                     virulence_init = collect(0.01:0.1:0.91),
-                                    initial_infected_frac = 0.005, 
+                                    initial_infected_frac = 0.05, 
                                     mutation_rate = [0.0, 0.8],
                                     mutation_variance = 0.2,
                                     virulence_mortality_coeff = 0.01,
@@ -35,20 +35,22 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
                                     min_start = true,
                                     maj_start = false,
                                     global_add_rate = 2, global_death_rate = 2, 
+                                    min_homophily = 0.0, maj_homophily = 0.0,
                                     whensteps = 10
     )
 
     rep_idx = collect(1:nreplicates)
 
     params_list = dict_list(
-        @dict virulence_init mutation_rate global_add_rate rep_idx
+        @dict virulence_init mutation_rate global_add_rate rep_idx min_homophily maj_homophily
     )
 
     models = [
         virulence_evo_model(; 
             metapop_size, initial_infected_frac, mutation_variance, 
             virulence_mortality_coeff, virulence_transmission_coeff,
-            virulence_transmission_denom_summand, params...)
+            virulence_transmission_denom_summand, min_group_frac, min_start,
+            maj_start, params...)
         for params in params_list
     ]
 
@@ -119,7 +121,7 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
             ]
 
     # Track total infected over time.
-    mdata = [:mutation_rate, :virulence_init, :total_infected]
+    mdata = [:mutation_rate, :virulence_init, :total_infected, :total_minority_infected, :total_majority_infected]
 
     # Stop when the pathogen has gone extinct or maxsteps reached.
     stopfn(model, step) = (count(

@@ -10,21 +10,59 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
                                  model_params...)
     
     # Define aggregation of infection status.
-    susceptible(status_vec) = isempty(status_vec) ? 0.0 : count(i == Susceptible 
-                                                                for i in status_vec) / count(i != Dead for i in status_vec)
-    infected(status_vec) = isempty(status_vec) ? 0.0 : count(i == Infected 
-                                                             for i in status_vec) / count(i != Dead for i in status_vec)
-    adata = [(a -> a.status, f) for f in (susceptible, infected)]
+    # susceptible(status_vec) = isempty(status_vec) ? 0.0 : count(i == Susceptible 
+    #                                                             for i in status_vec) / length(status_vec)
+    # infected(status_vec) = isempty(status_vec) ? 0.0 : count(i == Infected 
+    #                                                          for i in status_vec) / length(status_vec)
+    # adata = [(a -> a.status, f) for f in (susceptible, infected)]
+    susceptible(status_vec) = isempty(status_vec) ? 
+        0.0 : count(i == Susceptible for i in status_vec) 
+
+    # ...then infected.
+    # infected(status_vec) = isempty(status_vec) ? 
+    #     0.0 : 
+    #     count(i == Infected for i in status_vec)
+    function infected(status_vec)
+        # println(status_vec)
+        return isempty(status_vec) ?  0.0 : count(i == Infected for i in status_vec)
+    end
 
     # Define aggregation for pathogen virulence.
-    virulence(agent) = agent.status == Dead ? NaN : agent.pathogen.virulence
-    filtermean(virulence_vec) = mean(filter(!isnan, collect(virulence_vec)))
+    # virulence(agent) = agent.pathogen.virulence
+    # filtermean(virulence_vec) = mean(filter(!isnan, collect(virulence_vec)))
 
+    is_minority(x) = x.group == Minority
+
+    function filtermeanvirulence(pathogen_vec)
+        # virulence(pathogen) = pathogen.virulence
+        # virulence_vec = [pathogen.virulence for pathogen in pathogen_vec]
+        # println(pathogen_vec)
+        # println(typeof(pathogen_vec))
+        # println(length(collect(pathogen_vec)))
+        virulence_vec = [p.virulence for p in pathogen_vec if !isnan(p.virulence)]
+        if isempty(virulence_vec) 
+            return 0.0
+        else
+            return mean(virulence_vec)
+        end
+    end
 
     # Put all agent data aggregation together.
     # append!(adata, [(virulence, filtermean)])
-    adata = [(:status, susceptible), (:status, infected), (virulence, filtermean)]
+    # adata = [(:status, susceptible), (:status, infected), (virulence, filtermean)]
+    adata = [
+             (:status, susceptible), (:status, infected), 
+             (:pathogen, filtermeanvirulence),
 
+             (:status, susceptible, is_minority), 
+             (:status, infected, is_minority), 
+             (:pathogen, filtermeanvirulence, is_minority),
+
+             (:status, susceptible, !is_minority), 
+             (:status, infected, !is_minority), 
+             (:pathogen, filtermeanvirulence, !is_minority) #, !is_minority)
+             # (virulence, filtermean, !is_minority)
+            ]
     # Track total infected over time.
     mdata = [:total_infected]
 
@@ -42,10 +80,12 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
 
     println("\nTotal infected: $(model_df.total_infected[end])\n")
 
+    println(names(agent_df))
+
     if rename
         rename!(agent_df, :susceptible_status => :susceptible,
                           :infected_status => :infected,
-                          :filtermean_virulence => :mean_virulence);
+                          :filtermeanvirulence_pathogen => :mean_virulence);
     end
 
     if plot

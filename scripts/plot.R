@@ -19,28 +19,62 @@ plot_series <- function(csv_file, write_path="tmp/output.pdf") {
   # melted <- melt(dflim, id.vars = "step")
   melted <- melt(df, id.vars = "step")
 
-  ggplot(melted, aes(x=step, y=value, col=variable)) + geom_line() + mytheme
+  p <- ggplot(melted, aes(x=step, y=value, col=variable)) + geom_line() + ylim(0, 2.0) + mytheme
 
-  ggsave(write_path, width=6.75, height=5)
-}
+  # ggsave(write_path, width=6.75, height=5)
+  # ggsave(write_path)  #, width=6.75, height=5)
+  return (p)
+} 
 
 
 total_infections <- function(
     csv_files = c("50_trials_3_mrates_1.csv", "50_trials_3_mrates_2.csv",
                   "50_trials_3_mrates_vinit=1.0:0.1:2.0_1.csv", 
                   "50_trials_3_mrates_vinit=1.0:0.1:2.0_2.csv"),
-    write_file = "figures/total_infections.pdf"
+    minmaj = FALSE,
+    write_file = "figures/total_infections.pdf",
+    minority_fraction = 0.1,
+    ylim = c(-0.06, 0.01)
     ){
     
   df <- read_csv_series(csv_files) 
   df$mutation_rate <- factor(df$mutation_rate) 
-
-  p <- ggplot(df, aes(x=virulence_init, y=total_infected, color=mutation_rate)) + 
-    stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
-    stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
-    xlab(TeX("Initial virulence, $v_0$")) + ylab("Total infected\n(mean with 95% CI)") +
-    scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
-    mytheme
+  
+  if (minmaj) {
+    
+    df$total_infected_ratio = ((df$total_minority_infected / df$total_infected) - minority_fraction)
+    
+    p <- ggplot(df, aes(x=virulence_init, y=total_infected_ratio, color=mutation_rate)) + 
+      stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
+      stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
+      xlab(TeX("Initial virulence, $v_0$")) + ylab("Difference from expected\nminority infected fraction\n(mean with 95% CI)") +
+      scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
+      # ylim(ylim) +
+      mytheme
+    # p <- ggplot(df, aes(x=virulence_init)) + 
+    #   
+    #   stat_summary(aes(y = total_minority_infected, group=mutation_rate, linetype="c"), 
+    #                geom = "line", size=1.25, fun = mean) +
+    #   stat_summary(aes(y = total_minority_infected, group=mutation_rate), 
+    #                geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3) +
+    #   
+    #   stat_summary(aes(y = total_majority_infected, group=mutation_rate, linetype="g"), 
+    #                geom = "line", size=1.25, fun = mean) +
+    #   # stat_summary(aes(y = total_majority_infected, fill=mutation_rate, group=mutation_rate), 
+    #   #              geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3) +
+    #   
+    #   xlab(TeX("Initial virulence, $v_0$")) + ylab("Total infected\n(mean with 95% CI)") +
+    #   scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
+    #   mytheme
+  } else
+  {
+    p <- ggplot(df, aes(x=virulence_init, y=total_infected, color=mutation_rate)) + 
+      stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
+      stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
+      xlab(TeX("Initial virulence, $v_0$")) + ylab("Total infected\n(mean with 95% CI)") +
+      scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
+      mytheme
+  }
   
   ggsave(write_file, p, width=8.25, height = 4.5)
   

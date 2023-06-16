@@ -34,7 +34,7 @@ total_infections <- function(
     minmaj = FALSE,
     write_file = "figures/total_infections.pdf",
     minority_fraction = 0.1,
-    ylim = c(-0.06, 0.01)
+    ylim = c(-0.15, 0.01)
     ){
     
   df <- read_csv_series(csv_files) 
@@ -42,14 +42,14 @@ total_infections <- function(
   
   if (minmaj) {
     
-    df$total_infected_ratio = ((df$total_minority_infected / df$total_infected) - minority_fraction)
+    df$total_infected_ratio = 2*((df$total_minority_infected / df$total_infected) - minority_fraction)
     
     p <- ggplot(df, aes(x=virulence_init, y=total_infected_ratio, color=mutation_rate)) + 
       stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
-      xlab(TeX("Initial virulence, $v_0$")) + ylab("Difference from expected\nminority infected fraction\n(mean with 95% CI)") +
+      xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. minority risk of infection\n(95% CI)") +
       scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
-      # ylim(ylim) +
+      coord_cartesian(ylim = ylim, xlim = c(0.1, 0.9)) + scale_x_continuous(breaks=c(.1,.5,.9)) +
       mytheme
     # p <- ggplot(df, aes(x=virulence_init)) + 
     #   

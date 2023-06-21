@@ -6,12 +6,13 @@ using RCall
 include("../src/model.jl")
 
 
-function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100,
-                    virulence_init = 0.9, 
+function run_series(plot = true; metapop_size = 1000,
+                    maxsteps = 10000, rename = true, whensteps = 10,
+                    virulence_init = 0.3, 
                     initial_infected_frac = 0.05, 
                     mutation_rate = 0.8,
                     mutation_variance = 0.2,
-                    virulence_mortality_coeff = 0.01,
+                    virulence_mortality_coeff = 0.001,
                     virulence_transmission_coeff = 0.01,
                     virulence_transmission_denom_summand = 0.3, 
                     min_group_frac = 0.4,
@@ -85,7 +86,9 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
 
     # Initialize model.
     m = virulence_evo_model(; 
+                            metapop_size,
                             initial_infected_frac, 
+                            virulence_init,
                             mutation_rate,
                             mutation_variance,
                             virulence_mortality_coeff,
@@ -131,25 +134,24 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
                            );
     end
 
+    sum_series_copy = copy(agent_df.susceptible + agent_df.infected) 
+    agent_df.susceptible ./= sum_series_copy
+    agent_df.infected ./= sum_series_copy
 
+    sum_series_copy = copy(agent_df.susceptible_minority 
+                           + agent_df.infected_minority) 
+    agent_df.susceptible_minority ./= sum_series_copy 
+    agent_df.infected_minority ./= sum_series_copy 
+
+    sum_series_copy = copy(agent_df.susceptible_majority 
+                           + agent_df.infected_majority) 
+    agent_df.susceptible_majority ./= sum_series_copy 
+    agent_df.infected_majority ./= sum_series_copy
 
     if plot
         println("here")
         plot_series(agent_df)
     end
-
-    agent_df.susceptible ./= (agent_df.susceptible + agent_df.infected) 
-    agent_df.infected ./= (agent_df.susceptible + agent_df.infected) 
-
-    agent_df.susceptible_minority ./= (agent_df.susceptible_minority + 
-                                      agent_df.infected_minority) 
-    agent_df.infected_minority ./= (agent_df.susceptible_minority + 
-                                   agent_df.infected_minority) 
-
-    agent_df.susceptible_majority ./= (agent_df.susceptible_majority + 
-                                      agent_df.infected_majority) 
-    agent_df.infected_majority ./= (agent_df.susceptible_majority + 
-                                   agent_df.infected_majority) 
 
     return agent_df, model_df
 end

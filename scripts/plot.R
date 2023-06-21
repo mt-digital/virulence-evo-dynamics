@@ -20,9 +20,10 @@ plot_series <- function(csv_file, write_path="tmp/output.pdf") {
   # melted <- melt(dflim, id.vars = "step")
   melted <- melt(df, id.vars = "step")
 
-  p <- ggplot(melted, aes(x=step, y=value, col=variable)) + geom_line() + ylim(0, 2.0) + mytheme
+  p <- ggplot(melted, aes(x=step, y=value, col=variable)) + geom_line() + #ylim(0, 2.0) + 
+       mytheme
 
-  # ggsave(write_path, width=6.75, height=5)
+  ggsave(write_path, width=9.75, height=5)
   # ggsave(write_path)  #, width=6.75, height=5)
   return (p)
 }

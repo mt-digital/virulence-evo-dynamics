@@ -7,8 +7,20 @@ include("../src/model.jl")
 
 
 function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100,
-                                 model_params...)
-    
+                    virulence_init = 0.9, 
+                    initial_infected_frac = 0.05, 
+                    mutation_rate = 0.8,
+                    mutation_variance = 0.2,
+                    virulence_mortality_coeff = 0.01,
+                    virulence_transmission_coeff = 0.01,
+                    virulence_transmission_denom_summand = 0.3, 
+                    min_group_frac = 0.4,
+                    min_start = true,
+                    maj_start = true,
+                    global_add_rate = 2, global_death_rate = 2, 
+                    min_homophily = 0.0, maj_homophily = 0.0,
+                    model_params...)
+
     # Define aggregation of infection status.
     # susceptible(status_vec) = isempty(status_vec) ? 0.0 : count(i == Susceptible 
     #                                                             for i in status_vec) / length(status_vec)
@@ -72,7 +84,19 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
        ) == 0) || (step == maxsteps)
 
     # Initialize model.
-    m = virulence_evo_model(; model_params...); 
+    m = virulence_evo_model(; 
+                            initial_infected_frac, 
+                            mutation_rate,
+                            mutation_variance,
+                            virulence_mortality_coeff,
+                            virulence_transmission_coeff,
+                            virulence_transmission_denom_summand, 
+                            min_group_frac,
+                            min_start,
+                            maj_start,
+                            global_add_rate, global_death_rate, 
+                            min_homophily, maj_homophily,
+                            model_params...); 
 
     # Run model, collecting agent and model dataframes.
     when(model, step) = step % whensteps == 0
@@ -83,14 +107,49 @@ function run_series(plot = true; maxsteps = 3000, rename = true, whensteps = 100
     println(names(agent_df))
 
     if rename
-        rename!(agent_df, :susceptible_status => :susceptible,
-                          :infected_status => :infected,
-                          :filtermeanvirulence_pathogen => :mean_virulence);
+        # rename!(agent_df, :susceptible_status => :susceptible,
+        #                   :infected_status => :infected,
+        #                   :filtermeanvirulence_pathogen => :mean_virulence)
+                          # "infected_status_#84_f=is_minority" => :infected_majority);
+        rename!(agent_df, "susceptible_status" => "susceptible",
+                          "infected_status" => "infected",
+                          "filtermeanvirulence_pathogen" => "mean_virulence",
+
+                          "susceptible_status_is_minority" => 
+                              "susceptible_minority",
+                          "infected_status_is_minority" => 
+                              "infected_minority",
+                          "filtermeanvirulence_pathogen_is_minority" => 
+                              "mean_virulence_minority",
+
+                          "susceptible_status_#84_f=is_minority" => 
+                              "susceptible_majority",
+                          "infected_status_#84_f=is_minority" => 
+                              "infected_majority",
+                          "filtermeanvirulence_pathogen_#84_f=is_minority" =>
+                              "mean_virulence_majority"
+                           );
     end
 
+
+
     if plot
+        println("here")
         plot_series(agent_df)
     end
+
+    agent_df.susceptible ./= (agent_df.susceptible + agent_df.infected) 
+    agent_df.infected ./= (agent_df.susceptible + agent_df.infected) 
+
+    agent_df.susceptible_minority ./= (agent_df.susceptible_minority + 
+                                      agent_df.infected_minority) 
+    agent_df.infected_minority ./= (agent_df.susceptible_minority + 
+                                   agent_df.infected_minority) 
+
+    agent_df.susceptible_majority ./= (agent_df.susceptible_majority + 
+                                      agent_df.infected_majority) 
+    agent_df.infected_majority ./= (agent_df.susceptible_majority + 
+                                   agent_df.infected_majority) 
 
     return agent_df, model_df
 end

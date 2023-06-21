@@ -6,6 +6,7 @@ require(purrr)
 require(reshape2)
 require(stringr)
 
+
 mytheme <- theme(axis.line = element_line(), legend.key=element_rect(fill = NA),
                 text = element_text(size=22), 
                 panel.background = element_rect(fill = "white"))
@@ -24,7 +25,52 @@ plot_series <- function(csv_file, write_path="tmp/output.pdf") {
   # ggsave(write_path, width=6.75, height=5)
   # ggsave(write_path)  #, width=6.75, height=5)
   return (p)
-} 
+}
+
+
+draft_total_and_relative_figures <- function() {
+  
+  minpart1files <- c("data/first_draft/minpart=0.1/hmaj=0.0_hmin=0.0.csv",
+                     "data/first_draft/minpart=0.1/hmaj=0.2_hmin=0.8.csv",
+                     "data/first_draft/minpart=0.1/hmaj=0.5_hmin=0.5.csv",
+                     "data/first_draft/minpart=0.1/hmaj=0.8_hmin=0.2_50trials.csv")
+  
+  minpart4files <- c("data/first_draft/minpart=0.4/hmaj=0.0_hmin=0.0.csv",
+                     "data/first_draft/minpart=0.4/hmaj=0.2_hmin=0.8.csv")
+  
+  for (f in minpart1files) {
+    
+    write_file <- str_replace(basename(f), ".csv", ".pdf")
+    
+    total_write_dir <- "figures/first_draft/minpart=0.1/total/"
+    total_path <- file.path(total_write_dir, write_file)
+    
+    total_infections(c(f), FALSE, total_path)
+    
+    mindiff_write_dir <- "figures/first_draft/minpart=0.1/mindiff/"
+    mindiff_path <- file.path(mindiff_write_dir, write_file)
+    
+    total_infections(c(f), TRUE, mindiff_path)
+  }
+  
+  for (f in minpart4files) {
+    
+    write_file <- str_replace(basename(f), ".csv", ".pdf")
+    
+    total_write_dir <- "figures/first_draft/minpart=0.4/total/"
+    total_path <- file.path(total_write_dir, write_file)
+    
+    total_infections(c(f), FALSE, total_path)
+    
+    mindiff_write_dir <- "figures/first_draft/minpart=0.4/mindiff/"
+    mindiff_path <- file.path(mindiff_write_dir, write_file)
+    
+    total_infections(c(f), TRUE, mindiff_path, 0.4)
+  }
+  
+  
+  
+}
 
 
 total_infections <- function(

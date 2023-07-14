@@ -149,7 +149,6 @@ function run_series(plot = true; metapop_size = 1000,
     agent_df.infected_majority ./= sum_series_copy
 
     if plot
-        println("here")
         plot_series(agent_df)
     end
 

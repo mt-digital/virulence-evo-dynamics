@@ -126,8 +126,6 @@ function random_agent_dieoff!(model)
 
     agent_to_remove = sample(collect(allagents(model)))
     remove_agent!(agent_to_remove, model)
-
-    # agent_to_remove.status = Dead
 end
 
 
@@ -151,8 +149,6 @@ function sample_group(focal_agent, model)
 
     group_idx = Int(focal_agent.group) + 1
 
-    # weights[focal_agent.group] = agent_group_weight
-    # weights[1:end .!= focal_agent.group] .= 1 - agent_group_weight
     weights[group_idx] = agent_group_weight
     weights[1:end .!= group_idx] .= 1 - agent_group_weight
     

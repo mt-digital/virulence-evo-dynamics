@@ -72,7 +72,7 @@ source code](scripts/analysis.jl#L9).
 
 For computational analyses we need to run several trials over
 systematically-varied model parameters. To do this, Agents.jl provides the
-[`ensemblerun!`]() function, which is used in this repository's
+[`ensemblerun!`](https://juliadynamics.github.io/Agents.jl/stable/api/#Agents.ensemblerun!) function, which is used in this repository's
 `virulence_evo_experiment`, used in the example below. To use this function,
 first load the `src/experiment.jl` code.
 

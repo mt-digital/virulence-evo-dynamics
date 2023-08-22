@@ -3,7 +3,8 @@ using Dates
 using UUIDs: uuid4
 
 using DrWatson
-quickactivate("..")
+# quickactivate("..")
+quickactivate(".")
 
 # Set up DrWatson to include vectors in autogen save names.
 da = DrWatson.default_allowed(Any)
@@ -55,7 +56,8 @@ function parse_cli()
 
         "--virulence_init"
             help = "Initial virulence shared by all initially-infected agents"
-            required = true
+            default = collect(0.1:0.2:0.9)
+            # required = true
 
         "--initial_infected_frac"
             help = "Initial fraction in each group who are infected"
@@ -111,10 +113,10 @@ function run_trials(nreplicates = 20;
     # XXX Awkward stuff due to mixing around positional argument as either
     # nagents or nreplicates.
     kwargs_dict = Dict(experiment_kwargs)
-    nagents = pop!(kwargs_dict, :nagents)
-    kwargs_dict[:nreplicates] = nreplicates
+    # nagents = pop!(kwargs_dict, :nagents)
+    # kwargs_dict[:nreplicates] = nreplicates
 
-    result_df = virulence_evo_experiment(nagents; kwargs_dict...)
+    result_df = virulence_evo_experiment(nreplicates; kwargs_dict...)
 
     CSV.write(outputfilename, result_df)
 

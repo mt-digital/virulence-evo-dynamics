@@ -69,6 +69,7 @@ within this agent_step!, for simplicity.
 """
 function agent_step!(focal_agent::Person, model::ABM)
 
+    # XXX not sure why this is done
     virulence = copy(focal_agent.pathogen.virulence)
 
     # Possibly get infected if not infected...
@@ -180,10 +181,11 @@ function interact!(focal_agent, model)
         # Without mutation, the infection has the same recovery rate as partner's.
         virulence = copy(partner.pathogen.virulence)
 
-        # The pathogen evolves.
+        # The pathogen maybe evolves.
         if rand() < model.mutation_rate
             virulence += rand(model.mutation_dist)
 
+            # Virulence must be strictly positive.
             if virulence < 0.0
                 virulence = 0.05
             end
@@ -272,7 +274,7 @@ function initialize_metapopulation!(model::ABM)
     metapop_size = model.metapop_size
     initial_infected_frac = model.initial_infected_frac
 
-    virulence_init_distro = Normal(virulence_init, 0.1)
+    # virulence_init_distro = Normal(virulence_init, 0.1)
 
     gmin_count = Int(model.min_group_frac * metapop_size)
     gmaj_count = metapop_size - gmin_count

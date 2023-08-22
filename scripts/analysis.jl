@@ -156,11 +156,6 @@ function run_series(plot = true; metapop_size = 1000,
 end
 
 
-function run_trials(nreplicates = 10; outputfilename, experiment_kwargs...)
-
-end
-
-
 function plot_series(agent_df)
 
     # Create temporary directory for CSV and plot output.

@@ -20,6 +20,32 @@ include("../src/experiment.jl")
 
 s = ArgParseSettings()
 
+function vecparse(T, s::AbstractString)
+
+    if occursin(":", s)
+        vals = split(s, ":")
+        parseT(x) = parse(T, x)
+
+        return parseT(vals[1]):parseT(vals[2]):parseT(vals[3])
+        
+    else
+        s = replace(s, "[" => "")
+        s = replace(s, "]" => "")
+
+        return [parse(T, el) for el in split(s, ",")]
+    end
+end
+
+# Define functions to parse vectors of floats...
+function ArgParse.parse_item(::Type{Vector{Float64}}, s::AbstractString)
+    vecparse(Float64, s) 
+end
+
+# ...and vectors of ints. Could not get templated version to work so had to dup.
+function ArgParse.parse_item(::Type{Vector{Int64}}, s::AbstractString)
+    vecparse(Int64, s)
+end
+
 
 function parse_cli()
 
@@ -32,11 +58,11 @@ function parse_cli()
         "--nreplicates"
             help = "Number of trial simulations to run for this experiment"
             arg_type = Int
-            default = 100
+            default = 2
 
         "--metapop_size", "-N"
             help = "Population size of all groups combined, N"
-            default = 2000
+            default = 500
             arg_type = Int
 
         "--min_group_frac", "-m"
@@ -56,6 +82,7 @@ function parse_cli()
 
         "--virulence_init"
             help = "Initial virulence shared by all initially-infected agents"
+            arg_type = Vector{Float64}
             default = collect(0.1:0.2:0.9)
             # required = true
 
@@ -69,7 +96,8 @@ function parse_cli()
 
         "--mutation_rate"
             help = "Virulence mutation rate"
-            default = 0.8
+            arg_type = Vector{Float64}
+            default = [0.0,0.8]
 
         "--mutation_variance"
             help = "Virulence mutation variance"
@@ -77,7 +105,12 @@ function parse_cli()
 
         "--virulence_transmission_coeff"
             help = "Multiplicative coefficient in numerator of transmissibility as a function of virulence"
-            default = 0.02
+            default = 0.01
+
+        "--virulence_transmission_denom_summand"
+            help = "Summand in denominator of transmissibility as a 
+                    function of virulence"
+            default = 0.3
 
         "--min_homophily"
             help = "Minority group homophily level"
@@ -116,6 +149,7 @@ function run_trials(nreplicates = 20;
     # nagents = pop!(kwargs_dict, :nagents)
     # kwargs_dict[:nreplicates] = nreplicates
 
+    println("Will write to $outputfilename")
     result_df = virulence_evo_experiment(nreplicates; kwargs_dict...)
 
     CSV.write(outputfilename, result_df)
@@ -136,7 +170,19 @@ function main()
     datadirname = pop!(parsed_args, "datadirname")
     nameargs = copy(parsed_args)
 
+    for key in ["min_start", "maj_start", "mutation_rate", "mutation_variance",
+                "virulence_transmission_coeff", "virulence_mortality_coeff",
+                "virulence_transmission_denom_summand", "global_add_rate",
+                "global_death_rate"]
+                
+        delete!(nameargs, key)
+    end
+
+    println(nameargs)
+
     outputfilename = joinpath("data", datadirname, savename(nameargs, "csv"))
+
+    println(outputfilename)
 
     nreplicates = pop!(parsed_args, "nreplicates")
 

@@ -8,8 +8,8 @@ require(stringr)
 
 
 mytheme <- theme(axis.line = element_line(), legend.key=element_rect(fill = NA),
-                text = element_text(size=22), 
-                panel.background = element_rect(fill = "white"))
+                 text = element_text(size=22), 
+                 panel.background = element_rect(fill = "white"))
 
 
 plot_series <- function(csv_file, write_path="tmp/output.pdf") {
@@ -24,7 +24,7 @@ plot_series <- function(csv_file, write_path="tmp/output.pdf") {
        mytheme
 
   ggsave(write_path, width=9.75, height=5)
-  # ggsave(write_path)  #, width=6.75, height=5)
+
   return (p)
 }
 
@@ -68,9 +68,6 @@ draft_total_and_relative_figures <- function() {
     
     total_infections(c(f), TRUE, mindiff_path, 0.4)
   }
-  
-  
-  
 }
 
 
@@ -89,15 +86,16 @@ total_infections <- function(
   
   if (minmaj) {
     
-    df$total_infected_ratio = 2*((df$total_minority_infected / df$total_infected) - minority_fraction)
+    df$total_infected_ratio = 2*((df$total_majority_infected / df$total_infected) - (1. - minority_fraction))
     
     p <- ggplot(df, aes(x=virulence_init, y=total_infected_ratio, color=mutation_rate)) + 
       stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
-      xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. minority risk of infection\n(95% CI)") +
+      xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. ess./FL risk of infection\n(95% CI)") +
       scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
       coord_cartesian(ylim = ylim, xlim = c(0.1, 0.9)) + scale_x_continuous(breaks=c(.1,.5,.9)) +
       mytheme
+    
     # p <- ggplot(df, aes(x=virulence_init)) + 
     #   
     #   stat_summary(aes(y = total_minority_infected, group=mutation_rate, linetype="c"), 

@@ -91,7 +91,7 @@ total_infections <- function(
     p <- ggplot(df, aes(x=virulence_init, y=total_infected_ratio, color=mutation_rate)) + 
       stat_summary(geom = "line", size=1.25, fun = mean, aes(group=mutation_rate)) +
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
-      xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. majority risk of infection\n(95% CI)") +
+      xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. ess./FL risk of infection\n(95% CI)") +
       scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
       coord_cartesian(ylim = ylim, xlim = c(0.1, 0.9)) + scale_x_continuous(breaks=c(.1,.5,.9)) +
       mytheme

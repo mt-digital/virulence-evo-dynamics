@@ -107,13 +107,33 @@ function run_series(plot = true; metapop_size = 1000,
 
     println("\nTotal infected: $(model_df.total_infected[end])\n")
 
+    adf_names = names(agent_df)
     println(names(agent_df))
+    println(map(el -> length(el), names(agent_df)))
+
+    # Three-line hack to get majority variable names which now change each run.
+# println(filter(name -> 
+#                                                    # contains("susceptible", name) &&
+#                                                    length(name) > 30, 
+#                                                    adf_names))
+#     return adf_names
+
+    susceptible_not_minority_name = first(filter(name -> contains(name, "is_minority") &&
+                                                   contains(name, "susceptible") &&
+                                                   length(name) > 30, 
+                                               adf_names))
+
+    infected_not_minority_name = first(filter(name -> contains(name, "is_minority") &&
+                                                contains(name, "infected") &&
+                                                length(name) > 27, 
+                                                adf_names))
+
+    mean_virulence_not_minority_name = first(filter(name -> contains(name, "is_minority") &&
+                                                      contains(name, "filtermeanvirulence") &&
+                                                      length(name) > 40, 
+                                                      adf_names))
 
     if rename
-        # rename!(agent_df, :susceptible_status => :susceptible,
-        #                   :infected_status => :infected,
-        #                   :filtermeanvirulence_pathogen => :mean_virulence)
-                          # "infected_status_#84_f=is_minority" => :infected_majority);
         rename!(agent_df, "susceptible_status" => "susceptible",
                           "infected_status" => "infected",
                           "filtermeanvirulence_pathogen" => "mean_virulence",
@@ -125,11 +145,11 @@ function run_series(plot = true; metapop_size = 1000,
                           "filtermeanvirulence_pathogen_is_minority" => 
                               "mean_virulence_minority",
 
-                          "susceptible_status_#84_f=is_minority" => 
+                          susceptible_not_minority_name => 
                               "susceptible_majority",
-                          "infected_status_#84_f=is_minority" => 
+                          infected_not_minority_name => 
                               "infected_majority",
-                          "filtermeanvirulence_pathogen_#84_f=is_minority" =>
+                          mean_virulence_not_minority_name =>
                               "mean_virulence_majority"
                            );
     end

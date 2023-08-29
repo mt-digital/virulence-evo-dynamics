@@ -58,7 +58,7 @@ function parse_cli()
         "--nreplicates"
             help = "Number of trial simulations to run for this experiment"
             arg_type = Int
-            default = 2
+            default = 10
 
         "--metapop_size", "-N"
             help = "Population size of all groups combined, N"
@@ -68,7 +68,7 @@ function parse_cli()
         "--min_group_frac", "-m"
             help = "Fraction of population that is in minority"
             arg_type = Float64
-            default = 0.05
+            default = 0.4
 
         "--min_start"
             help = "Whether the minority group has infected agents"

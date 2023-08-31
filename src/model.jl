@@ -114,12 +114,24 @@ function model_step!(model)
             random_agent_dieoff!(model)
         end
     end
+    
+    agents = collect(allagents(model))
 
-    model.minority_group = filter(agent -> agent.group == Minority, 
-                                  collect(allagents(model)))
+    model.minority_group = filter(agent -> agent.group == Minority, agents)
+                                  # collect(allagents(model)))
 
-    model.majority_group = filter(agent -> agent.group == Majority, 
-                                  collect(allagents(model)))
+    model.majority_group = filter(agent -> agent.group == Majority, agents)
+                                  # collect(allagents(model)))
+
+    # These incidences will be averaged to compare average risk difference
+    # over the course of the simulation.
+    model.sum_total_incidence += incidence(agents)
+    model.sum_minority_incidence += incidence(model.minority_group)
+    model.sum_majority_incidence += incidence(model.majority_group)
+end
+
+function incidence(agents)
+    return count(agent -> agent.status == Infected) / length(agents)
 end
 
 
@@ -233,6 +245,11 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
     total_minority_infected::Int = 0
     total_majority_infected::Int = 0
 
+    # Track sum of incidence over time for averaging and comparing risk diff.
+    sum_total_incidence::Float64 = 0
+    sum_minority_incidence::Float64 = 0
+    sum_majority_incidence::Float64 = 0
+
     minority_group = []
     majority_group = []
 
@@ -245,8 +262,10 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
                        mutation_rate, mutation_dist, global_death_rate, 
                        global_add_rate, death_count_dist, add_count_dist,
                        total_infected, total_minority_infected,
-                       total_majority_infected, rep_idx,
-                       minority_group, majority_group)
+                       total_majority_infected, 
+                       sum_total_incidence, sum_minority_incidence,
+                       sum_majority_incidence,
+                       minority_group, majority_group, rep_idx)
 
     # model = UnremovableABM(Person; properties)
     model = ABM(Person; properties)

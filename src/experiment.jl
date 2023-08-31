@@ -83,7 +83,8 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
 
     # Put all agent data aggregation together.
     adata = [
-             (:status, susceptible), (:status, infected), 
+             (:status, susceptible), 
+             (:status, infected), 
              (:pathogen, filtermeanvirulence),
 
              (:status, susceptible, is_minority), 
@@ -92,12 +93,14 @@ function virulence_evo_experiment(nreplicates = 10, record_series = false;
 
              (:status, susceptible, !is_minority), 
              (:status, infected, !is_minority), 
-             (:pathogen, filtermeanvirulence, !is_minority)
+             (:pathogen, filtermeanvirulence, !is_minority),
             ]
 
     # Track total infected over time.
     mdata = [:mutation_rate, :virulence_init, 
-             :total_infected, :total_minority_infected, :total_majority_infected]
+             :total_infected, :total_minority_infected, :total_majority_infected,
+             :sum_total_incidence, :sum_minority_incidence, 
+             :sum_majority_incidence]
 
     # Stop when the pathogen has gone extinct or maxsteps reached.
     stopfn(model, step) = (count(

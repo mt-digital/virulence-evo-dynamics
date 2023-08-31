@@ -70,18 +70,30 @@ draft_total_and_relative_figures <- function() {
   }
 }
 
+collect_plot_risk_difference <- function(minority_homophily, majority_homophily, 
+                                         minority_fraction){
+  
+}
+
+
+read_csv_series <- function(csv_files) {
+  return (
+    csv_files %>%
+      map_df(~read_csv(., show_col_types = FALSE))
+  )
+}
+
+
 
 total_infections <- function(
-    csv_files = c("50_trials_3_mrates_1.csv", "50_trials_3_mrates_2.csv",
-                  "50_trials_3_mrates_vinit=1.0:0.1:2.0_1.csv", 
-                  "50_trials_3_mrates_vinit=1.0:0.1:2.0_2.csv"),
+   df,
     minmaj = FALSE,
     write_file = "figures/total_infections.pdf",
     minority_fraction = 0.1,
     ylim = c(-0.15, 0.01)
     ){
     
-  df <- read_csv_series(csv_files) 
+  # df <- read_csv_series(csv_files) 
   df$mutation_rate <- factor(df$mutation_rate) 
   
   if (minmaj) {
@@ -93,7 +105,8 @@ total_infections <- function(
       stat_summary(geom = "ribbon", fun.data = mean_cl_normal, alpha = 0.3, aes(fill=mutation_rate, group=mutation_rate)) +
       xlab(TeX("Initial virulence, $v_0$")) + ylab("Rel. ess./FL risk of infection\n(95% CI)") +
       scale_color_discrete(TeX("Mutation rate, $\\mu$")) + scale_fill_discrete(TeX("Mutation rate, $\\mu$")) +
-      coord_cartesian(ylim = ylim, xlim = c(0.1, 0.9)) + scale_x_continuous(breaks=c(.1,.5,.9)) +
+      coord_cartesian(#ylim = ylim,
+                      xlim = c(0.1, 0.9)) + scale_x_continuous(breaks=c(.1,.5,.9)) +
       mytheme
     
     # p <- ggplot(df, aes(x=virulence_init)) + 
@@ -126,55 +139,55 @@ total_infections <- function(
   return (p)
 }
 
-rescue_factor <- function(
-    csv_files = c("50_trials_3_mrates_1.csv", "50_trials_3_mrates_2.csv",
-                  "50_trials_3_mrates_vinit=1.0:0.1:2.0_1.csv", 
-                  "50_trials_3_mrates_vinit=1.0:0.1:2.0_2.csv"),
-    write_file = "figures/evolutionary_rescue.pdf"
-) {
-  df <- read_csv_series(csv_files) 
-  df$virulence_init <- factor(df$virulence_init) 
-  df$mutation_rate <- factor(df$mutation_rate) 
-  
-  aggdf <- group_by(df, virulence_init, mutation_rate) %>%
-    summarize(mean_total_infected = mean(total_infected))
-  
-  # Separate different virulence inits for calculating rescue factor, log of diff
-  # between no evolution and that particular evo rate setting. The following is
-  # not a smart way to do it, but good enough for a first pass, optimize later.
-  aggdf_mu0 <- filter(aggdf, mutation_rate == 0.0)
-  
-  # Calculate log of difference for virulence 0.4. Automate later if neccessary.
-  aggdf_mu4 <- filter(aggdf, mutation_rate == 0.4)
-  head(aggdf_mu4)
-  
-  # Calculate log of difference for virulence 0.8. Automate later if neccessary.
-  aggdf_mu8 <- filter(aggdf, mutation_rate == 0.8)
-  head(aggdf_mu8)
-  
-  # print(aggdf_mu8$mean_total_infected - aggdf_mu0$mean_total_infected)
-  
-  aggdf_mu4$log_diff_total <- (aggdf_mu4$mean_total_infected - aggdf_mu0$mean_total_infected) / aggdf_mu0$mean_total_infected
-  print(aggdf_mu4$log_diff_total)
-  aggdf_mu8$log_diff_total <- (aggdf_mu8$mean_total_infected - aggdf_mu0$mean_total_infected) / aggdf_mu0$mean_total_infected
-  
-  logdiffdf <- rbind(aggdf_mu4, aggdf_mu8)
-  
-  p <- ggplot(logdiffdf, aes(x=virulence_init, y=log_diff_total, color=mutation_rate)) +
-    geom_line(aes(group=mutation_rate), size=1.25) +
-    xlab(TeX("Initial virulence, $v_0$")) + ylab(TeX("Rescue factor, $\\rho$")) + 
-    scale_color_manual(TeX("Mutation rate, $\\mu$"), breaks=c(0.4, 0.8), 
-                       values=c("#00b938", "#609cff")) +
-    mytheme
-  
-  ggsave(write_file, p, width=8.25, height=4.5)
-  
-  return (p)
-}
 
-read_csv_series <- function(csv_files) {
-  return (
-    csv_files %>%
-      map_df(~read_csv(., show_col_types = FALSE))
-  )
-}
+
+
+
+
+
+# rescue_factor <- function(
+#     csv_files = c("50_trials_3_mrates_1.csv", "50_trials_3_mrates_2.csv",
+#                   "50_trials_3_mrates_vinit=1.0:0.1:2.0_1.csv", 
+#                   "50_trials_3_mrates_vinit=1.0:0.1:2.0_2.csv"),
+#     write_file = "figures/evolutionary_rescue.pdf"
+# ) {
+#   df <- read_csv_series(csv_files) 
+#   df$virulence_init <- factor(df$virulence_init) 
+#   df$mutation_rate <- factor(df$mutation_rate) 
+#   
+#   aggdf <- group_by(df, virulence_init, mutation_rate) %>%
+#     summarize(mean_total_infected = mean(total_infected))
+#   
+#   # Separate different virulence inits for calculating rescue factor, log of diff
+#   # between no evolution and that particular evo rate setting. The following is
+#   # not a smart way to do it, but good enough for a first pass, optimize later.
+#   aggdf_mu0 <- filter(aggdf, mutation_rate == 0.0)
+#   
+#   # Calculate log of difference for virulence 0.4. Automate later if neccessary.
+#   aggdf_mu4 <- filter(aggdf, mutation_rate == 0.4)
+#   head(aggdf_mu4)
+#   
+#   # Calculate log of difference for virulence 0.8. Automate later if neccessary.
+#   aggdf_mu8 <- filter(aggdf, mutation_rate == 0.8)
+#   head(aggdf_mu8)
+#   
+#   # print(aggdf_mu8$mean_total_infected - aggdf_mu0$mean_total_infected)
+#   
+#   aggdf_mu4$log_diff_total <- (aggdf_mu4$mean_total_infected - aggdf_mu0$mean_total_infected) / aggdf_mu0$mean_total_infected
+#   print(aggdf_mu4$log_diff_total)
+#   aggdf_mu8$log_diff_total <- (aggdf_mu8$mean_total_infected - aggdf_mu0$mean_total_infected) / aggdf_mu0$mean_total_infected
+#   
+#   logdiffdf <- rbind(aggdf_mu4, aggdf_mu8)
+#   
+#   p <- ggplot(logdiffdf, aes(x=virulence_init, y=log_diff_total, color=mutation_rate)) +
+#     geom_line(aes(group=mutation_rate), size=1.25) +
+#     xlab(TeX("Initial virulence, $v_0$")) + ylab(TeX("Rescue factor, $\\rho$")) + 
+#     scale_color_manual(TeX("Mutation rate, $\\mu$"), breaks=c(0.4, 0.8), 
+#                        values=c("#00b938", "#609cff")) +
+#     mytheme
+#   
+#   ggsave(write_file, p, width=8.25, height=4.5)
+#   
+#   return (p)
+# }
+

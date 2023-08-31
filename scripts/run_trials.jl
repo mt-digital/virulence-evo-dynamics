@@ -62,7 +62,7 @@ function parse_cli()
 
         "--metapop_size", "-N"
             help = "Population size of all groups combined, N"
-            default = 500
+            default = 2000
             arg_type = Int
 
         "--min_group_frac", "-m"
@@ -88,10 +88,12 @@ function parse_cli()
 
         "--initial_infected_frac"
             help = "Initial fraction in each group who are infected"
+            arg_type = Float64
             default = 0.05
 
         "--virulence_mortality_coeff"
             help = "Linear coefficient specifying how mortality rate scales with virulence"
+            arg_type = Float64
             default = 0.005
 
         "--mutation_rate"
@@ -101,31 +103,38 @@ function parse_cli()
 
         "--mutation_variance"
             help = "Virulence mutation variance"
+            arg_type = Float64
             default = 0.2
 
         "--virulence_transmission_coeff"
             help = "Multiplicative coefficient in numerator of transmissibility as a function of virulence"
+            arg_type = Float64
             default = 0.01
 
         "--virulence_transmission_denom_summand"
             help = "Summand in denominator of transmissibility as a 
                     function of virulence"
+            arg_type = Float64
             default = 0.3
 
         "--min_homophily"
             help = "Minority group homophily level"
+            arg_type = Float64
             default = 0.0
 
         "--maj_homophily"
             help = "Majority group homophily level"
+            arg_type = Float64
             default = 0.0
 
         "--global_add_rate"
             help = "Birth rate/rate of migration in to metapopulation"
+            arg_type = Float64
             default = 1.5
 
         "--global_death_rate"
             help = "Death rate/rate of migration out of metapopulation"
+            arg_type = Float64
             default = 1.0
 
     end

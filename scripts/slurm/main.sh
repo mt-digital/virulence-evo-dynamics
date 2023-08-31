@@ -3,7 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=24
 #SBATCH --mem-per-cpu=10G
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=VirEvoDyn-main.out
 #SBATCH --partition=serc,normal
 
@@ -11,6 +11,9 @@
 # 
 # This script will write data to the data/main directory in the home project
 # directory, which should be a symlink to a directory in SCRATCH.
+#
+# Author: Matthew A. Turner <maturner01@gmail.com>
+# Date: 29 Aug. 2023
 
 module --force purge
 module load devel

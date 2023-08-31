@@ -131,7 +131,7 @@ function model_step!(model)
 end
 
 function incidence(agents)
-    return count(agent -> agent.status == Infected) / length(agents)
+    return count(agent -> agent.status == Infected, agents) / length(agents)
 end
 
 

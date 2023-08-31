@@ -75,6 +75,15 @@ function agent_step!(focal_agent::Person, model::ABM)
     # Possibly get infected if not infected...
     if focal_agent.status == Susceptible
         interact!(focal_agent, model)
+        # If focal agent gets infected, add it to the incidence count for
+        # the agent's group. 
+        if focal_agent.status == Infected
+            if focal_agent.group == Minority
+                model.infected_this_step_minority += 1
+            else
+                model.infected_this_step_majority += 1
+            end
+        end
 
     # ...or possibly die if infected
     elseif (focal_agent.status == Infected) &&
@@ -125,9 +134,23 @@ function model_step!(model)
 
     # These incidences will be averaged to compare average risk difference
     # over the course of the simulation.
-    model.sum_total_incidence += incidence(agents)
+    # model.sum_total_incidence += incidence(agents)
     model.sum_minority_incidence += incidence(model.minority_group)
     model.sum_majority_incidence += incidence(model.majority_group)
+
+    model.sum_minority_incidence += model.infected_this_step_minority /
+                                    model.prev_step_minority_susceptible 
+
+    model.sum_majority_incidence += model.infected_this_step_majority /
+                                    model.prev_step_majority_susceptible 
+
+    model.infected_this_step_minority = 0
+    model.infected_this_step_majority = 0
+
+    model.prev_step_minority_susceptible = 
+        count(agent -> agent.status == Susceptible, model.minority_group)
+    model.prev_step_majority_susceptible =
+        count(agent -> agent.status == Susceptible, model.majority_group)
 end
 
 function incidence(agents)
@@ -246,9 +269,15 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
     total_majority_infected::Int = 0
 
     # Track sum of incidence over time for averaging and comparing risk diff.
-    sum_total_incidence::Float64 = 0
+    # sum_total_incidence::Float64 = 0
     sum_minority_incidence::Float64 = 0
     sum_majority_incidence::Float64 = 0
+
+    infected_this_step_minority::Int = 0
+    infected_this_step_majority::Int = 0
+
+    prev_step_minority_susceptible::Int = 0
+    prev_step_majority_susceptible::Int = 0
 
     minority_group = []
     majority_group = []
@@ -263,8 +292,13 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
                        global_add_rate, death_count_dist, add_count_dist,
                        total_infected, total_minority_infected,
                        total_majority_infected, 
-                       sum_total_incidence, sum_minority_incidence,
+                       # sum_total_incidence, 
+                       sum_minority_incidence,
                        sum_majority_incidence,
+                       infected_this_step_minority,
+                       infected_this_step_majority,
+                       prev_step_minority_susceptible,
+                       prev_step_majority_susceptible,
                        minority_group, majority_group, rep_idx)
 
     # model = UnremovableABM(Person; properties)
@@ -277,6 +311,11 @@ function virulence_evo_model(; metapop_size = 1000, virulence_init = 0.3,
 
     model.majority_group = filter(agent -> agent.group == Majority, 
                                   collect(allagents(model)))
+
+    model.prev_step_minority_susceptible = 
+        count(agent -> agent.status == Susceptible, model.minority_group)
+    model.prev_step_majority_susceptible =
+        count(agent -> agent.status == Susceptible, model.majority_group)
 
     return model
 end

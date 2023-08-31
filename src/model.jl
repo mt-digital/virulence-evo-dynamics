@@ -135,8 +135,8 @@ function model_step!(model)
     # These incidences will be averaged to compare average risk difference
     # over the course of the simulation.
     # model.sum_total_incidence += incidence(agents)
-    model.sum_minority_incidence += incidence(model.minority_group)
-    model.sum_majority_incidence += incidence(model.majority_group)
+    # model.sum_minority_incidence += incidence(model.minority_group)
+    # model.sum_majority_incidence += incidence(model.majority_group)
 
     model.sum_minority_incidence += model.infected_this_step_minority /
                                     model.prev_step_minority_susceptible 
